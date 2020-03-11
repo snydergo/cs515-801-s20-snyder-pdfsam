@@ -29,7 +29,7 @@ import org.sejda.model.output.FileTaskOutput;
 import org.sejda.model.parameter.MergeParameters;
 import org.sejda.model.pdf.form.AcroFormPolicy;
 import org.sejda.model.toc.ToCPolicy;
-
+import org.sejda.model.pdf.page.PageRange;
 /**
  * Builder for {@link MergeParameters}
  * 
@@ -49,7 +49,13 @@ class MergeParametersBuilder extends AbstractPdfOutputParametersBuilder<MergePar
     private FileTaskOutput output;
 
     void addInput(PdfMergeInput input) {
-        this.inputs.add(input);
+        Set<PageRange> pagesInput = input.getPageSelection();
+
+        pagesInput.forEach(page -> {
+            PdfMergeInput newInput = new PdfMergeInput(input.getSource());
+            newInput.addPageRange(page);
+            this.inputs.add(newInput);
+        });
     }
 
     boolean hasInput() {

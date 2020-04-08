@@ -35,6 +35,24 @@ import java.util.Map;
  */
 public class NetUtils {
 
+    private static URL getRelativeURL(HttpURLConnection connection, URL url) throws IOException {
+        URL tempUrl = null;
+        connection.setConnectTimeout(15000);
+        connection.setReadTimeout(15000);
+        connection.setInstanceFollowRedirects(false); // Make the logic below easier to detect redirections
+        connection.setRequestProperty("User-Agent", "Mozilla/5.0 (PDFsam Basic)");
+
+        switch (connection.getResponseCode()) {
+            case HttpURLConnection.HTTP_MOVED_PERM:
+            case HttpURLConnection.HTTP_MOVED_TEMP:
+                String location = connection.getHeaderField("Location");
+                location = URLDecoder.decode(location, "UTF-8");
+                tempUrl = new URL(url, location); // Deal with relative URLs
+                connection.disconnect();
+        }
+        return tempUrl;
+    }
+
     /**
      * https://stackoverflow.com/questions/1884230/urlconnection-doesnt-follow-redirect
      * 
@@ -54,19 +72,9 @@ public class NetUtils {
             URLConnection conn = url.openConnection();
             if (conn instanceof HttpURLConnection) {
                 HttpURLConnection connection = (HttpURLConnection) conn;
-
-                connection.setConnectTimeout(15000);
-                connection.setReadTimeout(15000);
-                connection.setInstanceFollowRedirects(false); // Make the logic below easier to detect redirections
-                connection.setRequestProperty("User-Agent", "Mozilla/5.0 (PDFsam Basic)");
-
-                switch (connection.getResponseCode()) {
-                case HttpURLConnection.HTTP_MOVED_PERM:
-                case HttpURLConnection.HTTP_MOVED_TEMP:
-                    String location = connection.getHeaderField("Location");
-                    location = URLDecoder.decode(location, "UTF-8");
-                    url = new URL(url, location); // Deal with relative URLs
-                    connection.disconnect();
+                URL tempUrl = getRelativeURL(connection, url);
+                if(tempUrl != null) {
+                    url = tempUrl;
                     continue;
                 }
             }
